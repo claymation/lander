@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package>
+  <name>lander</name>
+  <version>0.0.0</version>
+  <description>Vision-based precision landing for multicopters</description>
+  <maintainer email="clay@daemons.net">Clay McClure</maintainer>
+  <license>BSD</license>
+  <!-- <url type="website">http://wiki.ros.org/lander</url> -->
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>mavros</build_depend>
+
+  <run_depend>rospy</run_depend>
+  <run_depend>mavros</run_depend>
+
+</package>
