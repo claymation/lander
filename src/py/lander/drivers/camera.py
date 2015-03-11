@@ -14,28 +14,13 @@ class Camera(object, PositionMixin):
     """
     Abstract base camera.
     """
-    def __init__(self, frame_size, fx, fy, frame_rate=30):
+    def __init__(self, camera_matrix):
         """
-        frame_size: size of the camera image ((width, height); pixels)
-        fx: focal length, x axis (pixels, as determined by camera calibration)
-        fy: focal length, y axis (pixels, as determined by camera calibration)
+        Initialize a camera, given its 3x4 instrinsic calibration matrix.
         """
         PositionMixin.__init__(self)
 
-        self.frame_size = frame_size
-        self.frame_rate = frame_rate
-
-        # Calculate principal point (image center) in pixel coordinates
-        cx = frame_size[0] / 2.0
-        cy = frame_size[1] / 2.0
-
-        # Build the camera's intrinsic matrix
-        # TODO: Move this out to a base class, and pass in the camera's intrinsic matrix
-        self.P = numpy.matrix((
-            (fx, 0, cx, 0),
-            (0, -fy, cy, 0),
-            (0,  0,  1, 0),
-        ))
+        self.P = camera_matrix
 
     def release(self):
         pass
@@ -108,6 +93,14 @@ class SimulatedCamera(Camera):
     """
     A simulated camera.
     """
+    def __init__(self, *args, **kwargs):
+        super(SimulatedCamera, self).__init__(*args, **kwargs)
+
+        # Compute the frame size from the principal point,
+        # assuming its right in the center of the frame
+        self.frame_size = (self.P[0,2] * 2, self.P[1,2] * 2)
+        self.frame_rate = rospy.get_param("~frame_rate", 30)
+
     def set_target(self, image_file, position, size_in_meters):
         """
         image_file: file name of target image

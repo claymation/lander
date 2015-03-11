@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # vim: set ts=4 sw=4 et:
 
-import argparse
 import array
 
 import cv2
@@ -25,13 +24,23 @@ class TrackerNode(object):
     The Tracker node is responsible for vision-based tracking of the landing pad.
     """
 
-    def __init__(self, camera):
+    def __init__(self):
         """
         Initialize the camera and subscribe to mavros topics.
         """
         rospy.init_node("tracker")
 
-        self.camera = camera
+        camera_matrix = numpy.matrix(rospy.get_param("~camera_matrix"))
+        use_sim = rospy.get_param("~use_sim", False)
+
+        if use_sim:
+            self.camera = SimulatedCamera(camera_matrix)
+            self.camera.set_target(
+                    image_file=rospy.get_param("~target_image"),
+                    position=rospy.get_param("~target_position"),
+                    size_in_meters=rospy.get_param("~target_size"))
+        else:
+            self.camera = OpenCVCamera(camera_matrix)
 
         self.image_publisher = \
                 rospy.Publisher("tracker/image",
@@ -119,6 +128,8 @@ class TrackerNode(object):
             frame = self.camera.get_frame()
             self.process_frame(frame)
 
+        self.camera.release()
+
 
 def draw_circles(image, circles):
     output = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
@@ -134,21 +145,6 @@ def draw_circles(image, circles):
 
 
 if __name__ == "__main__":
-    # TODO: Use ros params
-    parser = argparse.ArgumentParser(description="Track the landing pad")
-    parser.add_argument("--target", help="target image file name for simulated camera")
-
-    args = parser.parse_args()
-
-    if args.target:
-        camera = SimulatedCamera(frame_size=(752, 480), fx=1533, fy=1533)
-        camera.set_target(image_file=args.target,
-                position=(696719.24, 6084519.59, 0),
-                size_in_meters=(2, 2, 0))
-    else:
-        camera = OpenCVCamera(frame_size=(752, 480), fx=1533, fy=1533)
-
-    node = TrackerNode(camera)
+    node = TrackerNode()
     node.run()
 
-    camera.release()
