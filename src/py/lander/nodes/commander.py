@@ -7,18 +7,11 @@ import mavros.msg
 
 from lander import controllers
 from lander.lib.vehicle import Vehicle
+from lander.lib.state import FlightState
 
 
 # Guided modes (differ between ArduCopter and PX4 native)
 GUIDED_MODES = ("GUIDED", "OFFBOARD")
-
-
-class FlightState:
-    INIT    = "INIT"
-    PENDING = "PENDING"
-    SEEK    = "SEEK"
-    DESCEND = "DESCEND"
-    LAND    = "LAND"
 
 
 class CommanderNode(object):
