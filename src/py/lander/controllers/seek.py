@@ -3,6 +3,10 @@
 
 import rospy
 
+import geometry_msgs.msg
+
+from lander.lib.state import FlightState
+
 from .base import Controller
 
 
@@ -35,14 +39,26 @@ class SeekController(Controller):
 
     def __init__(self, *args, **kwargs):
         super(SeekController, self).__init__(*args, **kwargs)
+
         self.target_local_position = rospy.get_param("target_local_position",
                 DEFAULT_TARGET_LOCAL_POSITION)
         self.target_seek_altitude = rospy.get_param("target_seek_altitude",
                 DEFAULT_TARGET_SEEK_ALTITUDE)
 
-    def run(self):
-        # TODO: Determine whether we should transition to DESCEND state
+        rospy.Subscriber("/tracker/error",
+                geometry_msgs.msg.Point,
+                self.handle_error_message)
 
+    def handle_error_message(self, msg):
+        """
+        Transition to DESCEND state when we start receiving target error messages.
+        """
+        # TODO: Find a better way to transition between states
+        # TODO: Require a minimum certainty (covariance) before transitioning
+        if self.commander.state == FlightState.SEEK:
+            self.commander.transition_to_state(FlightState.DESCEND)
+
+    def run(self):
         # Construct an (x, y, z, yaw) setpoint, in local coordinates
         # NB: yaw currently has no effect (with ArduCopter, at least)
         x, y, z = self.target_local_position
