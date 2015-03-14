@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim: set ts=4 sw=4 et:
 
-import array
+import time
 
 import cv2
 import numpy
@@ -11,6 +11,7 @@ import geometry_msgs.msg
 import sensor_msgs.msg
 
 from lander.drivers.camera import OpenCVCamera, SimulatedCamera
+from lander.lib.kalman import KalmanFilter
 from lander.msg import TrackStamped
 
 
@@ -43,24 +44,79 @@ class TrackerNode(object):
         else:
             self.camera = OpenCVCamera(camera_matrix)
 
+        self.tracking = False
+        self.last_frame_time = 0
+        self.last_seen_time = 0
+        self.initialize_track_filter()
+
         self.image_publisher = rospy.Publisher("tracker/image",
                 sensor_msgs.msg.Image, queue_size=1)
 
         self.track_publisher = rospy.Publisher("tracker/track",
                 TrackStamped, queue_size=1)
 
-    def publish_track(self, tracking, position):
+    def initialize_track_filter(self, x=0, vx=0, y=0, vy=0, z=0, vz=0, p=10, q=1, r=1):
+        """
+        Construct a Kalman filter for a discretized continuous-time 3D kinematic model.
+
+        From: Estimation with Applications to Tracking and Navigation (Bar-Shalom)
+        """
+        # Process model (position and velocity terms)
+        F = lambda dt: numpy.matrix([
+            [  1, dt,  0,  0,  0,  0  ],  # x' = x + vx*dt
+            [  0,  1,  0,  0,  0,  0  ],  # vx' = vx
+            [  0,  0,  1, dt,  0,  0  ],  # y' = y + vy*dt
+            [  0,  0,  0,  1,  0,  0  ],  # vy' = vy
+            [  0,  0,  0,  0,  1, dt  ],  # z' = z + vz*dt
+            [  0,  0,  0,  0,  0,  1  ],  # vz' = vz
+        ])
+
+        # Control model (TODO)
+        B = 0
+
+        # Measurement model
+        H = numpy.matrix([
+            [  1, 0, 0, 0, 0, 0  ], # x
+            [  0, 0, 1, 0, 0, 0  ], # y
+            [  0, 0, 0, 0, 1, 0  ], # z
+        ])
+
+        # Initial state vector
+        x0 = numpy.matrix([ x, vx, y, vy, z, vz ]).T
+
+        # Initial state covariance
+        P0 = numpy.matrix(numpy.eye(6)) * p
+
+        # Process error covariance (continuous white noise acceleration model)
+        Q = lambda dt: numpy.matrix([
+            [  dt**3/3.0,  dt**2/2.0,          0,          0,          0,          0  ],
+            [  dt**2/2.0,         dt,          0,          0,          0,          0  ],
+            [          0,          0,  dt**3/3.0,  dt**2/2.0,          0,          0  ],
+            [          0,          0,  dt**2/2.0,         dt,          0,          0  ],
+            [          0,          0,          0,          0,  dt**3/3.0,  dt**2/2.0  ],
+            [          0,          0,          0,          0,  dt**2/2.0,         dt  ],
+        ]) * q
+
+        # Measurement error covariance
+        R = numpy.matrix(numpy.eye(3)) * r
+
+        self.track_filter = KalmanFilter(F, B, H, x0, P0, Q, R)
+
+    def publish_track(self, position, velocity):
         """
         Publish a TrackStamped message containing relative position
         (and eventually velocity) of the tracked object.
         """
         msg = TrackStamped()
-        msg.track.tracking.data = tracking
+        msg.track.tracking.data = self.tracking
 
-        if tracking:
+        if self.tracking:
             msg.track.position.x = position[0]
             msg.track.position.y = position[1]
             msg.track.position.z = position[2]
+            msg.track.velocity.x = velocity[0]
+            msg.track.velocity.y = velocity[1]
+            msg.track.velocity.z = velocity[2]
 
         self.track_publisher.publish(msg)
 
@@ -82,12 +138,48 @@ class TrackerNode(object):
         """
         Find and track the landing pad.
         """
-        position = self.detect_target(frame)
+        now = time.time()
 
-        # TODO: Filter position to determine velocity and uncertainty
-        tracking = position is not None
+        # Compute the time step (dt) between frames
+        dt = now - self.last_frame_time if self.last_frame_time else 0
+        self.last_frame_time = now
 
-        self.publish_track(tracking, position)
+        # Extract target position from the frame
+        raw_position = self.detect_target(frame)
+
+        # Determine whether we see the target now or whether we've seen it recently
+        see_currently = raw_position is not None
+        seen_recently = now - self.last_seen_time < 2
+
+        if see_currently: self.last_seen_time = now
+
+        # Reset filter if this is the first time we've seen the target recently
+        if see_currently and not seen_recently and not self.tracking:
+            self.initialize_track_filter()
+
+        # Time update
+        if self.tracking or (see_currently and seen_recently):
+            self.track_filter.predict(dt=dt)
+
+        # Measurement update
+        if see_currently and (seen_recently or self.tracking):
+            self.track_filter.update(raw_position)
+
+        # Extract position and velocity from filter state vector
+        position = self.track_filter.x[[0, 2, 4], 0].T.tolist()[0]
+        velocity = self.track_filter.x[[1, 3, 5], 0].T.tolist()[0]
+
+        # Determine whether we are certain about the target position
+        certain = (self.track_filter.P < 2).all()
+
+        if certain and not self.tracking:
+            rospy.loginfo("Found target at (%6.4f, %6.4f, %6.4f)", *position)
+        elif not certain and self.tracking:
+            rospy.loginfo("Lost target")
+
+        self.tracking = certain
+
+        self.publish_track(position, velocity)
 
     def detect_target(self, frame):
         """
