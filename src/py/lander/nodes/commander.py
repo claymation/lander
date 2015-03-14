@@ -14,6 +14,9 @@ from lander.msg import TrackStamped
 # Guided modes (differ between ArduCopter and PX4 native)
 GUIDED_MODES = ("GUIDED", "OFFBOARD")
 
+# Run control loop at 10 Hz by default
+DEFAULT_CONTROL_LOOP_RATE = 10
+
 
 class CommanderNode(object):
     """
@@ -40,8 +43,9 @@ class CommanderNode(object):
         self.state = FlightState.INIT
         self.transition_to_state(FlightState.PENDING)
 
-        # Run the control loop at 10 Hz
-        self.control_loop_rate = rospy.Rate(10)
+        # Initialize control loop rate
+        control_loop_rate = rospy.get_param("control_loop_rate", DEFAULT_CONTROL_LOOP_RATE)
+        self.control_loop_rate = rospy.Rate(control_loop_rate)
 
         rospy.Subscriber("/mavros/state", mavros.msg.State, self.handle_state_message)
         rospy.Subscriber("/tracker/track", TrackStamped, self.handle_track_message)
@@ -79,9 +83,7 @@ class CommanderNode(object):
 
     def run(self):
         """
-        Spin the lander control loop and ROS event loop.
-
-        Runs at 10 Hz.
+        Spin the ROS event loop, running the controller on each iteration.
         """
         while not rospy.is_shutdown():
             self.controller.run()
