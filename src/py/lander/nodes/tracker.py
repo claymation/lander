@@ -51,7 +51,7 @@ class TrackerNode(object):
 
     def publish_track(self, tracking, position):
         """
-        Publish a TrackStamped message containing position (in world coordinates)
+        Publish a TrackStamped message containing relative position
         (and eventually velocity) of the tracked object.
         """
         msg = TrackStamped()
@@ -112,9 +112,10 @@ class TrackerNode(object):
         # Extract the pixel coordinates of the strongest circle center
         target_xy_pixels = circles[0,0,:2]
 
-        target_xyz_world = self.camera.back_project(*target_xy_pixels)
+        # Back-project the pixel coordinates to body-relative camera coordinates
+        target_xyz_camera = self.camera.back_project(*target_xy_pixels)
 
-        return target_xyz_world
+        return target_xyz_camera
 
     def wait_for_position(self):
         """
