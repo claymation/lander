@@ -11,6 +11,7 @@ import geometry_msgs.msg
 import sensor_msgs.msg
 
 from lander.drivers.camera import OpenCVCamera, SimulatedCamera
+from lander.msg import TrackStamped
 
 
 # Primary colors (BGR)
@@ -45,24 +46,30 @@ class TrackerNode(object):
         self.image_publisher = rospy.Publisher("tracker/image",
                 sensor_msgs.msg.Image, queue_size=1)
 
-        self.error_publisher = rospy.Publisher("tracker/error",
-                geometry_msgs.msg.Point, queue_size=1)
+        self.track_publisher = rospy.Publisher("tracker/track",
+                TrackStamped, queue_size=1)
 
-    def publish_error(self, error):
+    def publish_track(self, tracking, position):
         """
-        Publish a Point message giving the horizontal target error in meters.
+        Publish a TrackStamped message containing position (in world coordinates)
+        (and eventually velocity) of the tracked object.
         """
-        msg = geometry_msgs.msg.Point()
-        msg.x = error[0]
-        msg.y = error[1]
-        msg.z = self.camera.position.z
-        self.error_publisher.publish(msg)
+        msg = TrackStamped()
+        msg.track.tracking.data = tracking
+
+        if tracking:
+            msg.track.position.x = position[0]
+            msg.track.position.y = position[1]
+            msg.track.position.z = position[2]
+
+        self.track_publisher.publish(msg)
 
     def publish_image(self, image):
         """
         Construct and publish an Image message for the given image.
         """
         # TODO: Publish monochrome image + metadata to minimize telemetry bandwidth
+        # TODO: Use ROS image_transport?
         msg = sensor_msgs.msg.Image()
         msg.height   = image.shape[0]
         msg.width    = image.shape[1]
@@ -75,17 +82,20 @@ class TrackerNode(object):
         """
         Find and track the landing pad.
         """
-        error = self.find_target_error(frame)
+        position = self.detect_target(frame)
 
-        # TODO: Below a threshold altitude, use optical flow to track target relative velocity
-        # TODO: Filter values before publishing
+        # TODO: Filter position to determine velocity and uncertainty
+        tracking = position is not None
 
-        if error is not None:
-            self.publish_error(error)
+        self.publish_track(tracking, position)
 
-    def find_target_error(self, frame):
+    def detect_target(self, frame):
         """
-        Compute the error (difference) between the camera center and landing pad center.
+        Detect the landing pad target in the camera frame and compute its center
+        in body-relative camera coordinates.
+
+        Returns a (dx, dy, dz) tuple giving the body-relative location of the
+        target center, in meters, or None if the target could not be found.
         """
         frame = cv2.GaussianBlur(frame, (5,5), 0)
 
@@ -104,8 +114,7 @@ class TrackerNode(object):
 
         target_xyz_world = self.camera.back_project(*target_xy_pixels)
 
-        p = self.camera.position
-        return (numpy.matrix((p.x, p.y, p.z)).T - target_xyz_world).T.tolist()[0]
+        return target_xyz_world
 
     def wait_for_position(self):
         """
