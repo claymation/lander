@@ -2,12 +2,18 @@ import rospy
 
 import geometry_msgs.msg
 
+from mavros.srv import StreamRate, StreamRateRequest
+
 
 class PositionMixin:
-    def __init__(self):
+    def __init__(self, stream_rate_hz=50):
         # TODO: Select a more suitable initial value
         self.position = None
         self.orientation = None
+
+	# Request higher telemetry stream rate
+	set_stream_rate = rospy.ServiceProxy("mavros/set_stream_rate", StreamRate)
+	set_stream_rate(StreamRateRequest.STREAM_POSITION, stream_rate_hz, True)
 
         # Would be nice to use /mavros/position/local here, but ArduCopter doesn't
         # transmit the required POSITION_LOCAL_NED messages. Instead, mavros converts
