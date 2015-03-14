@@ -155,7 +155,9 @@ class TrackerNode(object):
 
         # Reset filter if this is the first time we've seen the target recently
         if see_currently and not seen_recently and not self.tracking:
-            self.initialize_track_filter()
+            # TODO: Tune q and r
+            x, y, z = raw_position
+            self.initialize_track_filter(x=x, y=y, z=z)
 
         # Time update
         if self.tracking or (see_currently and seen_recently):

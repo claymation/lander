@@ -165,6 +165,7 @@ class SimulatedCamera(Camera):
         frame = cv2.warpPerspective(self.target_image, M, self.frame_size)
 
         # Simulate frame rate
+        # TODO: Improve
         rospy.sleep(1.0 / self.frame_rate)
 
         return frame
