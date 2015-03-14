@@ -42,15 +42,11 @@ class TrackerNode(object):
         else:
             self.camera = OpenCVCamera(camera_matrix)
 
-        self.image_publisher = \
-                rospy.Publisher("tracker/image",
-                        sensor_msgs.msg.Image,
-                        queue_size=1)
+        self.image_publisher = rospy.Publisher("tracker/image",
+                sensor_msgs.msg.Image, queue_size=1)
 
-        self.error_publisher = \
-                rospy.Publisher("tracker/error",
-                        geometry_msgs.msg.Point,
-                        queue_size=1)
+        self.error_publisher = rospy.Publisher("tracker/error",
+                geometry_msgs.msg.Point, queue_size=1)
 
     def publish_error(self, error):
         """
