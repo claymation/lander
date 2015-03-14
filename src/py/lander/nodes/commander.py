@@ -6,8 +6,9 @@ import rospy
 import mavros.msg
 
 from lander import controllers
-from lander.lib.vehicle import Vehicle
 from lander.lib.state import FlightState
+from lander.lib.vehicle import Vehicle
+from lander.msg import TrackStamped
 
 
 # Guided modes (differ between ArduCopter and PX4 native)
@@ -19,7 +20,6 @@ class CommanderNode(object):
     The Commander node is responsible for monitoring vehicle status
     and driving state transitions.
     """
-
     def __init__(self, vehicle):
         """
         Initialize the state machine subscribe to mavros topics.
@@ -44,6 +44,7 @@ class CommanderNode(object):
         self.control_loop_rate = rospy.Rate(10)
 
         rospy.Subscriber("/mavros/state", mavros.msg.State, self.handle_state_message)
+        rospy.Subscriber("/tracker/track", TrackStamped, self.handle_track_message)
 
     def handle_state_message(self, msg):
         """
@@ -57,10 +58,16 @@ class CommanderNode(object):
         """
         mode = msg.mode
 
-        if mode in GUIDED_MODES and self.state == "PENDING":
-            self.transition_to_state("SEEK")
-        elif mode not in GUIDED_MODES and self.state != "PENDING":
-            self.transition_to_state("PENDING")
+        if mode in GUIDED_MODES and self.state == FlightState.PENDING:
+            self.transition_to_state(FlightState.SEEK)
+        elif mode not in GUIDED_MODES and self.state != FlightState.PENDING:
+            self.transition_to_state(FlightState.PENDING)
+
+    def handle_track_message(self, msg):
+        """
+        Forward tracker/TrackStamped messages to controllers.
+        """
+        self.controller.handle_track_message(msg)
 
     def transition_to_state(self, new_state):
         """

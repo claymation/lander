@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# vim: set ts=4 sw=4 et:
+
+
 class Controller(object):
     """
     Encapsulates the control logic for each stage of flight
@@ -8,4 +12,14 @@ class Controller(object):
         self.vehicle = vehicle
 
     def run(self):
-        raise NotImplementedError
+        """
+        Called by the commander once per control loop.
+        """
+        pass
+
+    def handle_track_message(self, msg):
+        """
+        Called by the commander when it receives a TrackStamped message.
+        """
+        pass
+
