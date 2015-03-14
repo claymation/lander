@@ -5,9 +5,8 @@ import rospy
 
 import geometry_msgs.msg
 
+from lander.lib.controller import Controller
 from lander.lib.state import FlightState
-
-from .base import Controller
 
 
 # By default, we assume the target is located at the origin,

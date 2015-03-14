@@ -1,4 +1,4 @@
-from .base import Controller
+from lander.lib.controller import Controller
 
 
 class LandController(Controller):

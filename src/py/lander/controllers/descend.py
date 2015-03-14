@@ -5,7 +5,7 @@ import rospy
 
 import geometry_msgs.msg
 
-from .base import Controller
+from lander.lib.controller import Controller
 
 
 # Maximum descent rate, in m/s
