@@ -45,7 +45,7 @@ class CommanderNode(object):
         self.transition_to_state(FlightState.PENDING)
 
         # Initialize control loop rate
-        control_loop_rate = rospy.get_param("control_loop_rate", DEFAULT_CONTROL_LOOP_RATE)
+        control_loop_rate = rospy.get_param("~control_loop_rate", DEFAULT_CONTROL_LOOP_RATE)
         self.control_loop_rate = rospy.Rate(control_loop_rate)
 
         rospy.Subscriber("/mavros/state", mavros.msg.State, self.handle_state_message)
