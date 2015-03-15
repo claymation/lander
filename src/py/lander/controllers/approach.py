@@ -9,10 +9,10 @@ from lander.lib.state import FlightState
 
 
 # Maximum horizontal velocity, in m/s
-DEFAULT_MAX_VEL_XY = 3.0
+DEFAULT_MAX_VEL_XY = 1.0
 
 # Maximum horizontal acceleration, in m/s/s
-DEFAULT_MAX_ACCEL_XY = 1.5
+DEFAULT_MAX_ACCEL_XY = 0.5
 
 
 class ApproachController(Controller):
