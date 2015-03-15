@@ -37,10 +37,10 @@ class SeekController(Controller):
 
     def handle_track_message(self, msg):
         """
-        Transition to DESCEND state when we start tracking the target.
+        Transition to APPROACH state when we start tracking the target.
         """
-        if msg.tracking.data:
-            self.commander.transition_to_state(FlightState.DESCEND)
+        if msg.track.tracking.data:
+            self.commander.transition_to_state(FlightState.APPROACH)
 
     def run(self):
         """

@@ -33,10 +33,11 @@ class CommanderNode(object):
 
         # Initialize flight controllers
         self.controllers = {
-            FlightState.DESCEND : controllers.DescendController(self, vehicle),
-            FlightState.LAND    : controllers.LandController(self, vehicle),
-            FlightState.PENDING : controllers.PendingController(self, vehicle),
-            FlightState.SEEK    : controllers.SeekController(self, vehicle),
+            FlightState.PENDING  : controllers.PendingController(self, vehicle),
+            FlightState.SEEK     : controllers.SeekController(self, vehicle),
+            FlightState.APPROACH : controllers.ApproachController(self, vehicle),
+            FlightState.DESCEND  : controllers.DescendController(self, vehicle),
+            FlightState.LAND     : controllers.LandController(self, vehicle),
         }
 
         # Initialize state machine
