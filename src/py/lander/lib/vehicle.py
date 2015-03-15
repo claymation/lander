@@ -22,6 +22,11 @@ class Vehicle(object, PositionMixin):
                         geometry_msgs.msg.TwistStamped,
                         queue_size=10)
 
+        self.acceleration_setpoint_publisher = \
+                rospy.Publisher("/mavros/setpoint_accel/accel",
+                        geometry_msgs.msg.Vector3Stamped,
+                        queue_size=10)
+
     def set_location_setpoint(self, setpoint):
         """
         Publish a SET_POSITION_TARGET_LOCAL_NED message with
@@ -51,3 +56,17 @@ class Vehicle(object, PositionMixin):
         msg.twist.angular.z = yaw_rate
 
         self.velocity_setpoint_publisher.publish(msg)
+
+    def set_acceleration_setpoint(self, setpoint):
+        """
+        Publish a SET_POSITION_TARGET_LOCAL_NED message with linear
+        accelerations ax, ay, az.
+        """
+        ax, ay, az = setpoint
+
+        msg = geometry_msgs.msg.Vector3Stamped()
+        msg.vector.x = ax
+        msg.vector.y = ay
+        msg.vector.z = az
+
+        self.acceleration_setpoint_publisher.publish(msg)
