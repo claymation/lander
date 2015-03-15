@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # vim: set ts=4 sw=4 et:
 
+import numpy
 import rospy
 
 from lander.lib.controller import Controller
@@ -26,6 +27,8 @@ class ApproachController(Controller):
 
         self.max_accel_xy = rospy.get_param("max_accel_xy", DEFAULT_MAX_ACCEL_XY)
         self.max_vel_xy = rospy.get_param("max_vel_xy", DEFAULT_MAX_VEL_XY)
+
+        self.vxs, self.vys = [], []
 
     def handle_track_message(self, msg):
         """
@@ -73,9 +76,19 @@ class ApproachController(Controller):
         else:
             set_vy = max(set_vy, veh_v.y - max_ay)
 
+        self.vxs.append(set_vx)
+        self.vys.append(set_vy)
+
         print "veh_vx: %8.4f  rel_vx: %8.4f  rel_px: %8.4f  set_vx: %8.4f" % (veh_v.x, rel_v.x, rel_p.x, set_vx)
         print "veh_vy: %8.4f  rel_vy: %8.4f  rel_py: %8.4f  set_vy: %8.4f" % (veh_v.y, rel_v.y, rel_p.y, set_vy)
         print
 
+    def run(self):
+        # Wait until we have at least three setpoints to average
+        if len(self.vxs) < 3 or len(self.vys) < 3: return
+
+        set_vx, set_vy = numpy.mean(self.vxs), numpy.mean(self.vys)
         setpoint = (set_vx, set_vy, 0, 0)
         self.vehicle.set_velocity_setpoint(setpoint)
+
+        self.vxs, self.vys = [], []
