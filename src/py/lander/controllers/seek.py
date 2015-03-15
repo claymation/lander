@@ -3,8 +3,6 @@
 
 import rospy
 
-import geometry_msgs.msg
-
 from lander.lib.controller import Controller
 from lander.lib.state import FlightState
 
