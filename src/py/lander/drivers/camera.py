@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # vim: set ts=4 sw=4 et:
 
+import time
+
 import cv2
 import numpy
 import rospy
@@ -94,7 +96,11 @@ class SimulatedCamera(Camera):
         # Compute the frame size from the principal point,
         # assuming its right in the center of the frame
         self.frame_size = (self.P[0,2] * 2, self.P[1,2] * 2)
+
+        # Compute the time period between frames (dt)
         self.frame_rate = rospy.get_param("~frame_rate", 30)
+        self.frame_dt = 1.0 / self.frame_rate
+        self.last_frame_time = 0
 
     def set_target(self, image_file, position, size_in_meters):
         """
@@ -165,7 +171,9 @@ class SimulatedCamera(Camera):
         frame = cv2.warpPerspective(self.target_image, M, self.frame_size)
 
         # Simulate frame rate
-        # TODO: Improve
-        rospy.sleep(1.0 / self.frame_rate)
+        now = time.time()
+        dt = now - self.last_frame_time
+        rospy.sleep(self.frame_dt - dt)
+        self.last_frame_time = now
 
         return frame
