@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# vim: set ts=4 sw=4 et:
+
 import rospy
 
 import geometry_msgs.msg
@@ -11,9 +14,9 @@ class PositionMixin:
         self.position = None
         self.orientation = None
 
-	# Request higher telemetry stream rate
-	set_stream_rate = rospy.ServiceProxy("mavros/set_stream_rate", StreamRate)
-	set_stream_rate(StreamRateRequest.STREAM_POSITION, stream_rate_hz, True)
+        # Request higher telemetry stream rate
+        set_stream_rate = rospy.ServiceProxy("mavros/set_stream_rate", StreamRate)
+        set_stream_rate(StreamRateRequest.STREAM_POSITION, stream_rate_hz, True)
 
         # Would be nice to use /mavros/position/local here, but ArduCopter doesn't
         # transmit the required POSITION_LOCAL_NED messages. Instead, mavros converts
@@ -26,9 +29,8 @@ class PositionMixin:
 
     def handle_position_message(self, msg):
         """
-        Handle mavros/global_position/local messages, published by the FCU at
-        around 1 Hz.
+        Handle mavros/global_position/local messages.
         """
-	pose = msg.pose.pose
+        pose = msg.pose.pose
         self.position = pose.position
         self.orientation = pose.orientation
