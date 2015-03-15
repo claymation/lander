@@ -84,7 +84,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES lander
-  CATKIN_DEPENDS rospy message_generation std_msgs geometry_msgs
+  CATKIN_DEPENDS rospy message_runtime std_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 
