@@ -13,12 +13,12 @@ class Vehicle(object, PositionMixin):
         PositionMixin.__init__(self)
 
         self.location_setpoint_publisher = \
-                rospy.Publisher("/mavros/setpoint/local_position",
+                rospy.Publisher("/mavros/setpoint_position/local_position",
                         geometry_msgs.msg.PoseStamped,
                         queue_size=10)
 
         self.velocity_setpoint_publisher = \
-                rospy.Publisher("/mavros/setpoint/cmd_vel",
+                rospy.Publisher("/mavros/setpoint_velocity/cmd_vel",
                         geometry_msgs.msg.TwistStamped,
                         queue_size=10)
 
