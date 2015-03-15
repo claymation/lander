@@ -27,6 +27,10 @@ class PositionMixin:
                 geometry_msgs.msg.PoseWithCovarianceStamped,
                 self.handle_position_message)
 
+        rospy.Subscriber("/mavros/global_position/gp_vel",
+            geometry_msgs.msg.Vector3Stamped,
+            self.handle_velocity_message)
+
     def handle_position_message(self, msg):
         """
         Handle mavros/global_position/local messages.
@@ -34,3 +38,9 @@ class PositionMixin:
         pose = msg.pose.pose
         self.position = pose.position
         self.orientation = pose.orientation
+
+    def handle_velocity_message(self, msg):
+        """
+        Handle mavros/global_position/gp_vel messages.
+        """
+        self.velocity = msg.vector
