@@ -18,13 +18,8 @@ class PositionMixin:
         set_stream_rate = rospy.ServiceProxy("mavros/set_stream_rate", StreamRate)
         set_stream_rate(StreamRateRequest.STREAM_POSITION, stream_rate_hz, True)
 
-        # Would be nice to use /mavros/position/local here, but ArduCopter doesn't
-        # transmit the required POSITION_LOCAL_NED messages. Instead, mavros converts
-        # the global coordinates passed via the POSITION_GLOBAL_INT message into UTM
-        # coordinates, which can be used for local navigation assuming the drone
-        # doesn't cross zone boundaries.
-        rospy.Subscriber("/mavros/global_position/local",
-                geometry_msgs.msg.PoseWithCovarianceStamped,
+        rospy.Subscriber("/mavros/local_position/local",
+                geometry_msgs.msg.PoseStamped,
                 self.handle_position_message)
 
         rospy.Subscriber("/mavros/global_position/gp_vel",
@@ -33,9 +28,9 @@ class PositionMixin:
 
     def handle_position_message(self, msg):
         """
-        Handle mavros/global_position/local messages.
+        Handle mavros/local_position/local messages.
         """
-        pose = msg.pose.pose
+        pose = msg.pose
         self.position = pose.position
         self.orientation = pose.orientation
 
