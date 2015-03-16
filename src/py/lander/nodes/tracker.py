@@ -226,7 +226,8 @@ class TrackerNode(object):
 
         while not rospy.is_shutdown():
             frame = self.camera.get_frame()
-            self.process_frame(frame)
+            if frame is not None:
+                self.process_frame(frame)
 
         self.camera.release()
 
