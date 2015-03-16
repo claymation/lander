@@ -198,7 +198,7 @@ class TrackerNode(object):
         circles = cv2.HoughCircles(frame, cv2.cv.CV_HOUGH_GRADIENT, 1.5, 100)
 
         # Publish telemetry image
-        # self.publish_image(draw_circles(frame, circles))
+        self.publish_image(draw_circles(frame, circles))
 
         # Fail fast if we didn't detect any circles
         if circles is None or len(circles) == 0: return
