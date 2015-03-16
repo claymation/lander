@@ -1,6 +1,11 @@
+#!/usr/bin/env python
+# vim: set ts=4 sw=4 et:
+
 import rospy
 
 import geometry_msgs.msg
+
+from mavros.srv import SetMode
 
 from lander.lib.position import PositionMixin
 
@@ -26,6 +31,13 @@ class Vehicle(object, PositionMixin):
                 rospy.Publisher("/mavros/setpoint_accel/accel",
                         geometry_msgs.msg.Vector3Stamped,
                         queue_size=10)
+
+    def set_mode(self, mode):
+        """
+        Ask the FCU to transition to the specified custom flight mode.
+        """
+        set_mode = rospy.ServiceProxy("mavros/set_mode", SetMode)
+        set_mode(custom_mode=mode)
 
     def set_location_setpoint(self, setpoint):
         """
