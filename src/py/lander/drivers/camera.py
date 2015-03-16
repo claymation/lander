@@ -37,11 +37,11 @@ class Camera(object, PositionMixin):
         q = [o.x, o.y, o.z, o.w]
         roll, pitch, yaw = euler_from_quaternion(q)
 
-        # Compute rotation matrix:
-        #   - apply rigid body rotations around body axes, in yaw-pitch-roll order,
-        #     to compute the camera's pose in world coordinates
-        # NB: mavros negates yaw and pitch (why?!), so we correct for that here
-        R = numpy.matrix(euler_matrix(-yaw, -pitch, roll, axes="rzxy"))
+        # Compute rotation matrix, applying rigid body rotations around body axes,
+        # in yaw-pitch-roll order, to compute the camera's pose in world coordinates
+        # NB: mavros is still working on sign conventions; in the meantime, we need
+        #     to negate roll to match mavlink/mavproxy
+        R = numpy.matrix(euler_matrix(yaw, pitch, -roll, axes="rzxy"))
 
         # Express image point as a column vector in homogeneous coordinates
         P_i = numpy.matrix((u, v, 1)).T
@@ -150,14 +150,14 @@ class SimulatedCamera(Camera):
         # (assuming that the camera points down, such that positive z is down)
         L = numpy.diag([1, 1, -1, 1])
 
-        # Compute rotation matrix:
-        #   - apply rigid body rotations around body axes, in yaw-pitch-roll order,
-        #     to compute the camera's pose in world coordinates
-        #   - take the inverse (transpose) rotation matrix to map from world
-        #     to camera coordinates
-        # NB: Not sure why the angles need to be negated here, but mavros already
-        #     negates yaw and pitch, so we only need to negate roll (but why?!)
-        R = numpy.matrix(euler_matrix(yaw, pitch, -roll, axes="rzxy")).T
+        # Compute rotation matrix, applying rigid body rotations around body axes,
+        # in yaw-pitch-roll order, to compute the camera's pose in world coordinates
+        # NB: mavros is still working on sign conventions; in the meantime, we need
+        #     to negate roll to match mavlink/mavproxy
+        R = numpy.matrix(euler_matrix(yaw, pitch, -roll, axes="rzxy"))
+
+        # Invert (transpose) the matrix to rotate world coordinates to camera frame
+        R = R.T
 
         # Project target corners from right-handed world coordinates to
         # left-handed image coordinates
