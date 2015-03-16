@@ -143,9 +143,12 @@ class SimulatedCamera(Camera):
         roll, pitch, yaw = euler_from_quaternion(q)
 
         # Build translation vector
-        # NB: We negate z because in the camera's frame, positive z is down
         p = self.position
-        c = numpy.matrix((p.x, p.y, -p.z, 1)).T
+        c = numpy.matrix((p.x, p.y, p.z, 1)).T
+
+        # Convert from right-handed to left-handed coordinate system
+        # (assuming that the camera points down, such that positive z is down)
+        L = numpy.diag([1, 1, -1, 1])
 
         # Compute rotation matrix:
         #   - apply rigid body rotations around body axes, in yaw-pitch-roll order,
@@ -156,8 +159,9 @@ class SimulatedCamera(Camera):
         #     negates yaw and pitch, so we only need to negate roll (but why?!)
         R = numpy.matrix(euler_matrix(yaw, pitch, -roll, axes="rzxy")).T
 
-        # Project target corners from world to (homogeneous) image coordinates
-        corners = self.P * R * (self.target_corners_world - c)
+        # Project target corners from right-handed world coordinates to
+        # left-handed image coordinates
+        corners = self.P * R * L * (self.target_corners_world - c)
 
         # Recover 2D points from homogeneous coordinates (as row vectors)
         corners = (corners / corners[2])[:2].T
