@@ -36,8 +36,7 @@ class ApproachController(Controller):
         """
         # Abort if we're no longer tracking the target
         if not msg.track.tracking.data:
-            self.vehicle.set_velocity_setpoint((0, 0, 0, 0))
-            self.commander.transition_to_state(FlightState.SEEK)
+            self.commander.relinquish_control()
             return
 
         # Velocity of vehicle
