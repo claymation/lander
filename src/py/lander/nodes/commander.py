@@ -82,6 +82,23 @@ class CommanderNode(object):
         self.state = new_state
         self.controller = self.controllers[self.state]
 
+    def relinquish_control(self):
+        """
+        Relinquish control of the vehicle.
+        """
+        rospy.loginfo("RELINQUISHING CONTROL")
+
+        # Full stop
+        self.vehicle.set_velocity_setpoint((0, 0, 0, 0))
+
+        # Ask FCU to hold current position
+        # NB: This is ArduPilot-specific
+        self.vehicle.set_mode("POSHOLD")
+
+        # Wait for FCU to change flight mode
+        while self.state != FlightState.PENDING and not rospy.is_shutdown():
+            self.control_loop_rate.sleep()
+
     def run(self):
         """
         Spin the ROS event loop, running the controller on each iteration.
