@@ -5,7 +5,7 @@ import rospy
 
 import geometry_msgs.msg
 
-from mavros.srv import SetMode
+from mavros.srv import CommandBool, SetMode
 
 from lander.lib.position import PositionMixin
 
@@ -31,6 +31,16 @@ class Vehicle(object, PositionMixin):
                 rospy.Publisher("/mavros/setpoint_accel/accel",
                         geometry_msgs.msg.Vector3Stamped,
                         queue_size=10)
+
+    def set_armed_state(self, state):
+        set_armed_state = rospy.ServiceProxy("/mavros/cmd/arming", CommandBool)
+        set_armed_state(value=state)
+
+    def arm(self):
+        self.set_armed_state(True)
+
+    def disarm(self):
+        self.set_armed_state(False)
 
     def set_mode(self, mode):
         """
