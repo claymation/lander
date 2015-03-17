@@ -69,8 +69,8 @@ class DescendController(Controller):
 
         # Abort if we've moved out of the target radius
         # TODO: climb and attempt to reacquire the target
-        if distance > self.max_descend_radius:
-            self.commander.relinquish_control()
+        # if distance > self.max_descend_radius:
+        #     self.commander.relinquish_control()
 
         # Compute velocity setpoints
         # TODO: Implement I and D terms for full PID control
