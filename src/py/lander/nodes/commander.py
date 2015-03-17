@@ -48,6 +48,7 @@ class CommanderNode(object):
         rospy.Subscriber("/tracker/track", TrackStamped, self.handle_track_message)
 
         # Initialize state machine
+        self.controller = None
         self.state = FlightState.INIT
         self.transition_to_state(FlightState.PENDING)
 
@@ -79,9 +80,12 @@ class CommanderNode(object):
         Enter the new state.
         """
         rospy.loginfo("STATE TRANSITION: %s --> %s", self.state, new_state)
-        self.controller.exit()
+
+        if self.controller is not None:
+            self.controller.exit()
+
         self.state = new_state
-        self.controller = self.controllers[self.state]
+        self.controller = self.controllers[new_state]
         self.controller.enter()
 
     def relinquish_control(self):
