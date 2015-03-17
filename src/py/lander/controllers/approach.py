@@ -6,13 +6,18 @@ import rospy
 
 from lander.lib.controller import Controller
 from lander.lib.state import FlightState
+from lander.lib.timers import HolddownTimer
 
 
 # Maximum horizontal speed, in m/s
-DEFAULT_MAX_SPEED_XY = 1.5
+DEFAULT_MAX_SPEED_XY = 0.25
 
 # Maximum horizontal acceleration, in m/s/s
-DEFAULT_MAX_ACCEL_XY = 0.5
+DEFAULT_MAX_ACCEL_XY = 0.1
+
+DEFAULT_DESCEND_RADIUS = 0.33
+DEFAULT_DESCEND_MAX_SPEED_XY = 0.10
+DEFAULT_DESCEND_HOLDDOWN = 3
 
 
 class ApproachController(Controller):
@@ -27,8 +32,17 @@ class ApproachController(Controller):
 
         self.max_accel_xy = rospy.get_param("max_accel_xy", DEFAULT_MAX_ACCEL_XY)
         self.max_speed_xy = rospy.get_param("max_speed_xy", DEFAULT_MAX_SPEED_XY)
+        self.descend_radius = rospy.get_param("descend_radius", DEFAULT_DESCEND_RADIUS)
+        self.descend_max_speed_xy = rospy.get_param("descend_max_speed_xy",
+                DEFAULT_DESCEND_MAX_SPEED_XY)
+        self.descend_holddown = rospy.get_param("descend_holddown",
+                DEFAULT_DESCEND_HOLDDOWN)
 
-        self.vxs, self.vys = [], []
+        self.descend_holddown_timer = HolddownTimer(self.descend_holddown)
+
+    def enter(self):
+        self.descend_holddown_timer.reset()
+        self.setpoint = None
 
     def handle_track_message(self, msg):
         """
@@ -51,9 +65,11 @@ class ApproachController(Controller):
         err_x = tgt_p.x - veh_p.x
         err_y = tgt_p.y - veh_p.y
 
+        distance = numpy.sqrt(err_x**2 + err_y**2)
+
         # Compute velocity setpoints
         # TODO: Implement I and D terms for full PID control
-        Kp = 0.25
+        Kp = 0.10
         set_vx = Kp * err_x
         set_vy = Kp * err_y
 
@@ -65,8 +81,27 @@ class ApproachController(Controller):
 
         # TODO: Enforce acceleration constraints
 
-        setpoint = (set_vx, set_vy, 0, 0)
-        self.vehicle.set_velocity_setpoint(setpoint)
+        target_is_close   = distance < self.descend_radius
+        vehicle_is_stable = speed < self.descend_max_speed_xy
 
-        print "error: (%6.2f, %6.2f)  setpoint: (%6.2f, %6.2f)  speed: %6.2f" % (
-            err_x, err_y, set_vx, set_vy, speed)
+        # Transition to DESCEND state if:
+        #   - we're within the approach radius of the target
+        #   - the vehicle speed is within the approach speed threshold
+        #   - those conditions have been true for the holddown period
+        if self.descend_holddown_timer.test(target_is_close and vehicle_is_stable):
+            self.commander.transition_to_state(FlightState.DESCEND)
+            return
+
+        # Otherwise, control velocity to minimize position error
+        self.setpoint = (set_vx, set_vy, 0, 0)
+
+        rospy.logdebug("error: (%6.2f, %6.2f)  setpoint: (%6.2f, %6.2f)  " +
+                       "speed: %6.2f  distance: %6.2f",
+                        err_x, err_y, set_vx, set_vy, speed, distance)
+
+    def run(self):
+        """
+        Set the velocity setpoint once per control loop iteration.
+        """
+        if self.setpoint is not None:
+            self.vehicle.set_velocity_setpoint(self.setpoint)
