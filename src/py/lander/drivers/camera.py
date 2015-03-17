@@ -162,6 +162,10 @@ class SimulatedCamera(Camera):
         p = self.position
         c = numpy.matrix((p.x, p.y, p.z, 1)).T
 
+        # Fail fast if we're below the ground plane (negative altitude)
+        if p.z <= 0.0:
+            return numpy.zeros(self.frame_size, dtype=numpy.uint8).T
+
         # Convert from right-handed to left-handed coordinate system
         # (assuming that the camera points down, such that positive z is down)
         L = numpy.diag([1, 1, -1, 1])
