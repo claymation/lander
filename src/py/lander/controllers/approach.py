@@ -8,8 +8,8 @@ from lander.lib.controller import Controller
 from lander.lib.state import FlightState
 
 
-# Maximum horizontal velocity, in m/s
-DEFAULT_MAX_VEL_XY = 1.0
+# Maximum horizontal speed, in m/s
+DEFAULT_MAX_SPEED_XY = 1.5
 
 # Maximum horizontal acceleration, in m/s/s
 DEFAULT_MAX_ACCEL_XY = 0.5
@@ -26,7 +26,7 @@ class ApproachController(Controller):
         super(ApproachController, self).__init__(*args, **kwargs)
 
         self.max_accel_xy = rospy.get_param("max_accel_xy", DEFAULT_MAX_ACCEL_XY)
-        self.max_vel_xy = rospy.get_param("max_vel_xy", DEFAULT_MAX_VEL_XY)
+        self.max_speed_xy = rospy.get_param("max_speed_xy", DEFAULT_MAX_SPEED_XY)
 
         self.vxs, self.vys = [], []
 
@@ -39,55 +39,34 @@ class ApproachController(Controller):
             self.commander.relinquish_control()
             return
 
-        # Velocity of vehicle
-        # NB: ArduCopter's velocities sort of suck; fake it for now
+        # Position and velocity of vehicle
+        veh_p = self.vehicle.position
         veh_v = self.vehicle.velocity
 
-        # Position and velocity of target, relative to the vehicle
-        rel_p = msg.track.position
-        rel_v = msg.track.velocity
+        # Position and velocity of target
+        tgt_p = msg.track.position
+        tgt_v = msg.track.velocity
 
-        # First, compute velocity setpoints to minimize velocity error
-        set_vx = veh_v.x + rel_v.x
-        set_vy = veh_v.y + rel_v.y
+        # Compute position error
+        err_x = tgt_p.x - veh_p.x
+        err_y = tgt_p.y - veh_p.y
 
-        # Then, add in a little velocity to minimize position error
-        kP = 0.1
-        set_vx += kP * rel_p.x
-        set_vy += kP * rel_p.y
+        # Compute velocity setpoints
+        # TODO: Implement I and D terms for full PID control
+        Kp = 0.25
+        set_vx = Kp * err_x
+        set_vy = Kp * err_y
 
-        # Enforce velocity constraints
-        max_vx = max_vy = self.max_vel_xy
-        set_vx = min(set_vx, max_vx) if set_vx > 0 else max(set_vx, -max_vx)
-        set_vy = min(set_vy, max_vy) if set_vy > 0 else max(set_vy, -max_vy)
+        # Enforce speed constraint
+        speed = numpy.sqrt(set_vx**2 + set_vy**2)
+        if speed > self.max_speed_xy:
+            set_vx = set_vx * self.max_speed_xy / speed
+            set_vy = set_vy * self.max_speed_xy / speed
 
-        # Enforce acceleration constraints
-        # NB: Dividing by 30 to convert to m/s/frame
-        max_ax = max_ay = self.max_accel_xy / 30.0
+        # TODO: Enforce acceleration constraints
 
-        if set_vx > veh_v.x:
-            set_vx = min(set_vx, veh_v.x + max_ax)
-        else:
-            set_vx = max(set_vx, veh_v.x - max_ax)
-
-        if set_vy > veh_v.y:
-            set_vy = min(set_vy, veh_v.y + max_ay)
-        else:
-            set_vy = max(set_vy, veh_v.y - max_ay)
-
-        self.vxs.append(set_vx)
-        self.vys.append(set_vy)
-
-        print "veh_vx: %8.4f  rel_vx: %8.4f  rel_px: %8.4f  set_vx: %8.4f" % (veh_v.x, rel_v.x, rel_p.x, set_vx)
-        print "veh_vy: %8.4f  rel_vy: %8.4f  rel_py: %8.4f  set_vy: %8.4f" % (veh_v.y, rel_v.y, rel_p.y, set_vy)
-        print
-
-    def run(self):
-        # Wait until we have at least three setpoints to average
-        if len(self.vxs) < 3 or len(self.vys) < 3: return
-
-        set_vx, set_vy = numpy.mean(self.vxs), numpy.mean(self.vys)
         setpoint = (set_vx, set_vy, 0, 0)
         self.vehicle.set_velocity_setpoint(setpoint)
 
-        self.vxs, self.vys = [], []
+        print "error: (%6.2f, %6.2f)  setpoint: (%6.2f, %6.2f)  speed: %6.2f" % (
+            err_x, err_y, set_vx, set_vy, speed)
