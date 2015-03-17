@@ -107,8 +107,11 @@ class SimulatedCamera(Camera):
         super(SimulatedCamera, self).__init__(*args, **kwargs)
 
         # Compute the frame size from the principal point,
-        # assuming its right in the center of the frame
-        self.frame_size = (self.P[0,2] * 2, self.P[1,2] * 2)
+        # assuming it's right in the center of the frame
+        self.frame_size = (
+            int(numpy.ceil(self.P[0,2]) * 2),
+            int(numpy.ceil(self.P[1,2]) * 2),
+        )
 
         # Compute the time period between frames (dt)
         self.frame_rate = rospy.get_param("~frame_rate", 30)
