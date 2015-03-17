@@ -20,9 +20,10 @@ DEFAULT_MAX_SPEED_Z = 0.33
 # Maximum vertical acceleration, in m/s/s
 DEFAULT_MAX_ACCEL_Z = 0.1
 
-DEFAULT_LAND_RADIUS = 0.1
+DEFAULT_MAX_DESCEND_RADIUS = 0.25
+
 DEFAULT_LAND_MAX_SPEED_XY = 0.05
-DEFAULT_LAND_ALTITUDE = 0.25
+DEFAULT_LAND_ALTITUDE = 0.5
 
 
 class DescendController(Controller):
@@ -40,9 +41,8 @@ class DescendController(Controller):
         self.max_accel_xy = rospy.get_param("max_accel_xy", DEFAULT_MAX_ACCEL_XY)
         self.max_speed_z = rospy.get_param("max_speed_z", DEFAULT_MAX_SPEED_Z)
         self.max_accel_z = rospy.get_param("max_accel_z", DEFAULT_MAX_ACCEL_Z)
-        self.land_radius = rospy.get_param("land_radius", DEFAULT_LAND_RADIUS)
-        self.land_max_speed_xy = rospy.get_param("land_max_speed_xy",
-                DEFAULT_LAND_MAX_SPEED_XY)
+        self.max_descend_radius = rospy.get_param("max_descend_radius", DEFAULT_MAX_DESCEND_RADIUS)
+        self.land_max_speed_xy = rospy.get_param("land_max_speed_xy", DEFAULT_LAND_MAX_SPEED_XY)
         self.land_altitude = rospy.get_param("land_altitude", DEFAULT_LAND_ALTITUDE)
 
     def enter(self):
@@ -67,6 +67,11 @@ class DescendController(Controller):
 
         distance = numpy.sqrt(err_x**2 + err_y**2)
 
+        # Abort if we've moved out of the target radius
+        # TODO: climb and attempt to reacquire the target
+        if distance > self.max_descend_radius:
+            self.commander.relinquish_control()
+
         # Compute velocity setpoints
         # TODO: Implement I and D terms for full PID control
         Kpxy = 0.05
@@ -83,20 +88,15 @@ class DescendController(Controller):
 
         set_vz = max(set_vz, -self.max_speed_z)
 
-        # Prevent climbing during landing
-        if set_vz > 0: set_vz = 0
-
         # TODO: Enforce acceleration constraints
 
-        target_is_close   = distance < self.land_radius
-        vehicle_is_above_target = veh_p.z < self.land_altitude
+        vehicle_is_right_above_target = veh_p.z < self.land_altitude
         vehicle_is_stable = speed < self.land_max_speed_xy
 
         # Transition to LAND state if:
-        #   - we're within the approach radius of the target
         #   - the vehicle speed is within the approach speed threshold
         #   - those conditions have been true for the holddown period
-        if target_is_close and vehicle_is_above_target and vehicle_is_stable:
+        if vehicle_is_right_above_target and vehicle_is_stable:
             self.commander.transition_to_state(FlightState.LAND)
             return
 
