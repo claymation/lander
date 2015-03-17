@@ -24,6 +24,10 @@ class Camera(object, PositionMixin):
 
         self.P = camera_matrix
 
+        # Invert fy to account for the fact that positive y points down
+        # in pixel coordinates but points up in camera coordinates
+        self.P[1,1] = -self.P[1,1]
+
     def release(self):
         pass
 
