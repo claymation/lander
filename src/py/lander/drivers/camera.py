@@ -29,9 +29,25 @@ class Camera(object, PositionMixin):
 
     def back_project(self, u, v):
         """
-        Project a point from (u, v) pixel coordinates to relative (dx, dy, dz)
-        world coordinates, assuming the point lies on the ground plane.
+        Project a point from (u, v) pixel coordinates to (x, y, z) world coordinates,
+        assuming the point lies on the ground plane.
         """
+        # Express image point as a column vector in homogeneous coordinates
+        P_i = numpy.matrix((u, v, 1)).T
+
+        # Project the point from image coordinates to a ray in camera coordinates
+        K = self.P[:, :3]
+        P_c = K.I * P_i
+
+        # Recover 3D point from ray, using the vehicle's altitude to estimate
+        # the point's depth in the scene
+        d = self.position.z
+        P_c = P_c / P_c[2] * d
+
+        # Build translation vector
+        p = self.position
+        c = numpy.matrix((p.x, p.y, p.z)).T
+
         # Get euler angles from vehicle pose
         o = self.orientation
         q = [o.x, o.y, o.z, o.w]
@@ -41,24 +57,17 @@ class Camera(object, PositionMixin):
         # in yaw-pitch-roll order, to compute the camera's pose in world coordinates
         # NB: mavros is still working on sign conventions; in the meantime, we need
         #     to negate roll to match mavlink/mavproxy
-        R = numpy.matrix(euler_matrix(yaw, pitch, -roll, axes="rzxy"))
+        R = numpy.matrix(euler_matrix(yaw, pitch, -roll, axes="rzxy"))[:3,:3]
 
-        # Express image point as a column vector in homogeneous coordinates
-        P_i = numpy.matrix((u, v, 1)).T
+        # Convert from left-handed to right-handed coordinate system
+        # (assuming that the camera points down, such that positive z is down)
+        L = numpy.diag([1, 1, -1])
 
-        # Back-project and rotate a point in image coords to a ray in camera coords
-        K = self.P[:, :3]
-        R = R[:3, :3]
-        P_c = R * K.I * P_i
+        # Rotate and translate the point from left-handed camera coordinates
+        # to right-handed world coordinates
+        P_w = (R * L * P_c) + c
 
-        # Recover 3D point (in camera coordinates) from homogeneous coordinates
-        # TODO: Compute the point's depth in the scene, based on camera position
-        #       and orientation. For now, we assume the vehicle is mostly level,
-        #       so we use the (estimated) AGL altitude to estimate the depth.
-        d = self.position.z
-        P_c = P_c / P_c[2] * d
-
-        return P_c
+        return P_w
 
 
 class OpenCVCamera(Camera):
