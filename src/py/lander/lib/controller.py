@@ -11,6 +11,18 @@ class Controller(object):
         self.commander = commander
         self.vehicle = vehicle
 
+    def enter(self):
+        """
+        Called by the commander when transitioning to this state.
+        """
+        pass
+
+    def exit(self):
+        """
+        Called by the commander when transitioning from this state.
+        """
+        pass
+
     def run(self):
         """
         Called by the commander once per control loop.

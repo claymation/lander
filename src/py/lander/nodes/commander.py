@@ -79,8 +79,10 @@ class CommanderNode(object):
         Enter the new state.
         """
         rospy.loginfo("STATE TRANSITION: %s --> %s", self.state, new_state)
+        self.controller.exit()
         self.state = new_state
         self.controller = self.controllers[self.state]
+        self.controller.enter()
 
     def relinquish_control(self):
         """
