@@ -40,16 +40,16 @@ class CommanderNode(object):
             FlightState.LAND     : controllers.LandController(self, vehicle),
         }
 
-        # Initialize state machine
-        self.state = FlightState.INIT
-        self.transition_to_state(FlightState.PENDING)
-
-        # Initialize control loop rate
+        # Initialize the control loop
         control_loop_rate = rospy.get_param("~control_loop_rate", DEFAULT_CONTROL_LOOP_RATE)
         self.control_loop_rate = rospy.Rate(control_loop_rate)
 
         rospy.Subscriber("/mavros/state", mavros.msg.State, self.handle_state_message)
         rospy.Subscriber("/tracker/track", TrackStamped, self.handle_track_message)
+
+        # Initialize state machine
+        self.state = FlightState.INIT
+        self.transition_to_state(FlightState.PENDING)
 
     def handle_state_message(self, msg):
         """
