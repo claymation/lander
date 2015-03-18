@@ -18,7 +18,7 @@ DEFAULT_TARGET_SEEK_ALTITUDE = 15
 
 # The period of time we need to have continuously seen the target
 # before transitioning to APPROACH state (in seconds)
-DEFAULT_APPROACH_HOLDDOWN = 5
+DEFAULT_APPROACH_HOLDDOWN = 2.5
 
 # The speed at which we'll transition to APPROACH state
 # (assuming we can see the landing target) (in m/s)
@@ -26,7 +26,7 @@ DEFAULT_APPROACH_SPEED = 1.0
 
 # The radius within which we'll transition to APPROACH state
 # (assuming we can see the landing target) (in meters)
-DEFAULT_APPROACH_RADIUS = 1.5
+DEFAULT_APPROACH_RADIUS = 3
 
 
 class SeekController(Controller):
