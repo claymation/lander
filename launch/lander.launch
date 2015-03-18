@@ -1,0 +1,17 @@
+<launch>
+    <!-- mavros parameters -->
+    <arg name="fcu_url" default="/dev/ttyACM0:230400" />
+
+    <!-- tracker parameters -->
+    <arg name="camera_matrix" default="[[1296, 0, 319.5, 0],[0, 1295, 239.5, 0],[0, 0, 1, 0]]" />
+
+    <include file="$(find mavros)/launch/apm.launch">
+        <arg name="fcu_url" value="$(arg fcu_url)" />
+    </include>
+
+    <node name="tracker" pkg="lander" type="tracker.py">
+        <param name="camera_matrix" value="$(arg camera_matrix)" />
+    </node>
+
+    <node name="commander" pkg="lander" type="commander.py" />
+</launch>
