@@ -34,15 +34,17 @@ class ApproachController(Controller):
 
         self.max_accel_xy = rospy.get_param("max_accel_xy", DEFAULT_MAX_ACCEL_XY)
         self.max_speed_xy = rospy.get_param("max_speed_xy", DEFAULT_MAX_SPEED_XY)
+        self.tracking_holddown = rospy.get_param("tracking_holddown", DEFAULT_TRACKING_HOLDDOWN)
         self.descend_radius = rospy.get_param("descend_radius", DEFAULT_DESCEND_RADIUS)
         self.descend_max_speed_xy = rospy.get_param("descend_max_speed_xy",
                 DEFAULT_DESCEND_MAX_SPEED_XY)
-        self.descend_holddown = rospy.get_param("descend_holddown",
-                DEFAULT_DESCEND_HOLDDOWN)
+        self.descend_holddown = rospy.get_param("descend_holddown", DEFAULT_DESCEND_HOLDDOWN)
 
+        self.tracking_holddown_timer = HolddownTimer(self.tracking_holddown)
         self.descend_holddown_timer = HolddownTimer(self.descend_holddown)
 
     def enter(self):
+        self.tracking_holddown_timer.reset()
         self.descend_holddown_timer.reset()
         self.setpoint = None
         self.damping_factor = 0
@@ -52,7 +54,8 @@ class ApproachController(Controller):
         Implement control logic to correct for velocity and position errors.
         """
         # Abort if we're no longer tracking the target
-        if not msg.track.tracking.data:
+        if self.tracking_holddown_timer.test(not msg.track.tracking.data):
+            rospy.logwarn("Lost target during approach: aborting")
             self.commander.relinquish_control()
             return
 
