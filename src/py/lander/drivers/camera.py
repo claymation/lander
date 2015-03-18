@@ -94,8 +94,6 @@ class OpenCVCamera(Camera):
         Return a frame captured by the camera.
         """
         ok, frame = self.cap.read()
-        if ok:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         return frame
 
 
