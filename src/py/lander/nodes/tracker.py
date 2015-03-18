@@ -7,6 +7,8 @@ import cv2
 import numpy
 import rospy
 
+from cv_bridge import CvBridge
+
 import geometry_msgs.msg
 import sensor_msgs.msg
 
@@ -49,6 +51,7 @@ class TrackerNode(object):
         self.last_seen_time = 0
         self.initialize_track_filter()
 
+        self.image_bridge = CvBridge()
         self.image_publisher = rospy.Publisher("tracker/image",
                 sensor_msgs.msg.Image, queue_size=1)
 
@@ -124,14 +127,7 @@ class TrackerNode(object):
         """
         Construct and publish an Image message for the given image.
         """
-        # TODO: Publish monochrome image + metadata to minimize telemetry bandwidth
-        # TODO: Use ROS image_transport?
-        msg = sensor_msgs.msg.Image()
-        msg.height   = image.shape[0]
-        msg.width    = image.shape[1]
-        msg.encoding = "mono8" if image.ndim == 2 else "bgr8"
-        msg.step     = msg.width if image.ndim == 2 else msg.width * 3
-        msg.data     = image.reshape(-1).tolist()
+        msg = self.image_bridge.cv2_to_imgmsg(image, "bgr8")
         self.image_publisher.publish(msg)
 
     def process_frame(self, frame):
