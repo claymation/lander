@@ -74,7 +74,7 @@ class DescendController(Controller):
 
         # Compute velocity setpoints
         # TODO: Implement I and D terms for full PID control
-        Kpxy = 0.10
+        Kpxy = 0.15
         Kpz = 0.25
         set_vx = Kpxy * err_x
         set_vy = Kpxy * err_y
