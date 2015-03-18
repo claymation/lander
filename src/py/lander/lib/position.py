@@ -17,7 +17,10 @@ class PositionMixin:
         # Request higher telemetry stream rate
         rospy.wait_for_service("mavros/set_stream_rate")
         set_stream_rate = rospy.ServiceProxy("mavros/set_stream_rate", StreamRate)
+        # STREAM_POSITION == GLOBAL_POSITION_INT and LOCAL_POSITION_NED
         set_stream_rate(StreamRateRequest.STREAM_POSITION, stream_rate_hz, True)
+        # STREAM_EXTRA1 == ATTITUDE
+        set_stream_rate(StreamRateRequest.STREAM_EXTRA1, stream_rate_hz, True)
 
         rospy.Subscriber("/mavros/local_position/local",
                 geometry_msgs.msg.PoseStamped,
