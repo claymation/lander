@@ -75,7 +75,7 @@ class ApproachController(Controller):
 
         # Compute velocity setpoints
         # TODO: Implement I and D terms for full PID control
-        Kp = 0.10 * self.damping_factor
+        Kp = 0.25 * self.damping_factor
         set_vx = Kp * err_x
         set_vy = Kp * err_y
         self.damping_factor = min(self.damping_factor + 0.01, 1.00)
