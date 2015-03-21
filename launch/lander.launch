@@ -2,13 +2,20 @@
     <!-- mavros parameters -->
     <arg name="fcu_url" default="/dev/ttyACM0:230400" />
 
+    <!-- mavros node(s) -->
     <include file="$(find mavros)/launch/apm.launch">
         <arg name="fcu_url" value="$(arg fcu_url)" />
     </include>
 
+    <!-- lander nodes -->
     <node name="tracker" pkg="lander" type="tracker.py">
 	<rosparam command="load" file="$(find lander)/launch/tracker.yaml" />
     </node>
 
     <node name="commander" pkg="lander" type="commander.py" />
+
+    <!-- telemetry node(s) -->
+    <node name="telemetry" pkg="image_transport" type="republish"
+        args="raw in:=/tracker/image out:=/telemetry/image" />
+
 </launch>
