@@ -4,9 +4,9 @@
 import numpy
 import rospy
 
-from lander.lib.controller import Controller
 from lander.lib.state import FlightState
 from lander.lib.timers import HolddownTimer
+from lander.states.base import State
 
 
 # The landing target is located at the origin, i.e., where the vehicle's
@@ -29,7 +29,7 @@ DEFAULT_APPROACH_SPEED = 1.0
 DEFAULT_APPROACH_RADIUS = 3
 
 
-class SeekController(Controller):
+class SeekState(State):
     """
     Seek the landing target.
 
@@ -42,7 +42,7 @@ class SeekController(Controller):
     """
 
     def __init__(self, *args, **kwargs):
-        super(SeekController, self).__init__(*args, **kwargs)
+        super(SeekState, self).__init__(*args, **kwargs)
 
         self.target_local_position = rospy.get_param("target_local_position",
                 DEFAULT_TARGET_LOCAL_POSITION)

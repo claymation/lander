@@ -2,7 +2,7 @@
 # vim: set ts=4 sw=4 et:
 
 
-class Controller(object):
+class State(object):
     """
     Encapsulates the control logic for each stage of flight
     within its own controller class.

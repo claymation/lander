@@ -5,7 +5,7 @@ import rospy
 
 import mavros.msg
 
-from lander import controllers
+from lander import states
 from lander.lib.state import FlightState
 from lander.lib.vehicle import Vehicle
 from lander.msg import TrackStamped
@@ -25,32 +25,32 @@ class CommanderNode(object):
     """
     def __init__(self, vehicle):
         """
-        Initialize the state machine subscribe to mavros topics.
+        Initialize the state machine and subscribe to mavros topics.
         """
         rospy.init_node("commander")
 
         self.vehicle = vehicle
 
-        # Initialize flight controllers
-        self.controllers = {
-            FlightState.PENDING  : controllers.PendingController(self, vehicle),
-            FlightState.SEEK     : controllers.SeekController(self, vehicle),
-            FlightState.APPROACH : controllers.ApproachController(self, vehicle),
-            FlightState.DESCEND  : controllers.DescendController(self, vehicle),
-            FlightState.LAND     : controllers.LandController(self, vehicle),
-        }
-
         # Initialize the control loop
         control_loop_rate = rospy.get_param("~control_loop_rate", DEFAULT_CONTROL_LOOP_RATE)
         self.control_loop_rate = rospy.Rate(control_loop_rate)
 
-        rospy.Subscriber("/mavros/state", mavros.msg.State, self.handle_state_message)
-        rospy.Subscriber("/tracker/track", TrackStamped, self.handle_track_message)
+        # Initialize flight states
+        self.states = {
+            FlightState.PENDING  : states.PendingState(self, vehicle),
+            FlightState.SEEK     : states.SeekState(self, vehicle),
+            FlightState.APPROACH : states.ApproachState(self, vehicle),
+            FlightState.DESCEND  : states.DescendState(self, vehicle),
+            FlightState.LAND     : states.LandState(self, vehicle),
+        }
 
         # Initialize state machine
         self.controller = None
         self.state = FlightState.INIT
         self.transition_to_state(FlightState.PENDING)
+
+        rospy.Subscriber("/mavros/state", mavros.msg.State, self.handle_state_message)
+        rospy.Subscriber("/tracker/track", TrackStamped, self.handle_track_message)
 
     def handle_state_message(self, msg):
         """
@@ -71,7 +71,7 @@ class CommanderNode(object):
 
     def handle_track_message(self, msg):
         """
-        Forward tracker/TrackStamped messages to controllers.
+        Forward tracker/TrackStamped messages to states.
         """
         self.controller.handle_track_message(msg)
 
@@ -85,7 +85,7 @@ class CommanderNode(object):
             self.controller.exit()
 
         self.state = new_state
-        self.controller = self.controllers[new_state]
+        self.controller = self.states[new_state]
         self.controller.enter()
 
     def relinquish_control(self):

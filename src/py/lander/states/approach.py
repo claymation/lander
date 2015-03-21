@@ -4,9 +4,9 @@
 import numpy
 import rospy
 
-from lander.lib.controller import Controller
 from lander.lib.state import FlightState
 from lander.lib.timers import HolddownTimer
+from lander.states.base import State
 
 
 # Maximum horizontal speed, in m/s
@@ -22,7 +22,7 @@ DEFAULT_DESCEND_MAX_SPEED_XY = 0.25
 DEFAULT_DESCEND_HOLDDOWN = 1
 
 
-class ApproachController(Controller):
+class ApproachState(State):
     """
     Approach the landing target while maintaining altitude.
 
@@ -30,7 +30,7 @@ class ApproachController(Controller):
     and then minimize position error.
     """
     def __init__(self, *args, **kwargs):
-        super(ApproachController, self).__init__(*args, **kwargs)
+        super(ApproachState, self).__init__(*args, **kwargs)
 
         self.max_accel_xy = rospy.get_param("max_accel_xy", DEFAULT_MAX_ACCEL_XY)
         self.max_speed_xy = rospy.get_param("max_speed_xy", DEFAULT_MAX_SPEED_XY)

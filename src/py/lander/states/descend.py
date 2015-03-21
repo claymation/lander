@@ -4,8 +4,8 @@
 import numpy
 import rospy
 
-from lander.lib.controller import Controller
 from lander.lib.state import FlightState
+from lander.states.base import State
 
 
 # Maximum horizontal speed, in m/s
@@ -26,7 +26,7 @@ DEFAULT_LAND_MAX_SPEED_XY = 0.05
 DEFAULT_LAND_ALTITUDE = 0.5
 
 
-class DescendController(Controller):
+class DescendState(State):
     """
     Descend toward the landing target.
 
@@ -35,7 +35,7 @@ class DescendController(Controller):
     velocity to within sane limits.
     """
     def __init__(self, *args, **kwargs):
-        super(DescendController, self).__init__(*args, **kwargs)
+        super(DescendState, self).__init__(*args, **kwargs)
 
         self.max_speed_xy = rospy.get_param("max_speed_xy", DEFAULT_MAX_SPEED_XY)
         self.max_accel_xy = rospy.get_param("max_accel_xy", DEFAULT_MAX_ACCEL_XY)

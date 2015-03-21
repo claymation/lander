@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # vim: set ts=4 sw=4 et:
 
-from lander.lib.controller import Controller
+from lander.states.base import State
 
 
-class LandController(Controller):
+class LandState(State):
     """
     Land on the landing target.
 
